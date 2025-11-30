@@ -33,29 +33,55 @@ async function fetchPricesForMarket(clobTokenIds: string[]): Promise<string[]> {
 
 // Fonction pour normaliser les données Polymarket
 function normalizeMarketData(market: any): any {
-  let outcomePrices = market.outcomePrices || ['0.5', '0.5'];
-
-  if (Array.isArray(outcomePrices)) {
-    outcomePrices = outcomePrices.map((price: any) => {
+  // Parser outcomePrices - c'est souvent une string JSON comme "[\"0.65\", \"0.35\"]"
+  let outcomePrices = ['0.5', '0.5'];
+  if (typeof market.outcomePrices === 'string') {
+    try {
+      outcomePrices = JSON.parse(market.outcomePrices);
+    } catch (e) {
+      console.warn('Failed to parse outcomePrices:', market.outcomePrices);
+    }
+  } else if (Array.isArray(market.outcomePrices)) {
+    outcomePrices = market.outcomePrices.map((price: any) => {
       if (typeof price === 'string') return price;
       if (typeof price === 'number') return String(price);
       return '0.5';
     });
   }
 
-  let outcomes = market.outcomes;
-  if (!outcomes || !Array.isArray(outcomes)) {
-    outcomes = ['Yes', 'No'];
-  } else if (typeof outcomes[0] !== 'string') {
-    outcomes = outcomes.map((o: any) => o.name || o.title || 'Yes');
+  // Parser outcomes - c'est souvent une string JSON comme "[\"Yes\", \"No\"]"
+  let outcomes = ['Yes', 'No'];
+  if (typeof market.outcomes === 'string') {
+    try {
+      outcomes = JSON.parse(market.outcomes);
+    } catch (e) {
+      console.warn('Failed to parse outcomes:', market.outcomes);
+    }
+  } else if (Array.isArray(market.outcomes)) {
+    outcomes = market.outcomes;
+  }
+
+  // Parser volume et liquidity - ce sont des strings comme "123456.78"
+  let volume = 0;
+  if (typeof market.volume === 'string') {
+    volume = parseFloat(market.volume) || 0;
+  } else if (typeof market.volume === 'number') {
+    volume = market.volume;
+  }
+
+  let liquidity = 0;
+  if (typeof market.liquidity === 'string') {
+    liquidity = parseFloat(market.liquidity) || 0;
+  } else if (typeof market.liquidity === 'number') {
+    liquidity = market.liquidity;
   }
 
   return {
     ...market,
     outcomePrices,
     outcomes,
-    volume: market.volume || 0,
-    liquidity: market.liquidity || 0,
+    volume,
+    liquidity,
     spread: market.spread || 0,
   };
 }
@@ -87,10 +113,25 @@ export async function GET(
 
     console.log('📊 Polymarket API raw market data');
 
+    // Parser clobTokenIds - c'est souvent une string JSON comme "[\"123\", \"456\"]"
+    let clobTokenIds: string[] = [];
+    if (typeof data.clobTokenIds === 'string') {
+      try {
+        clobTokenIds = JSON.parse(data.clobTokenIds);
+      } catch (e) {
+        console.warn('Failed to parse clobTokenIds:', data.clobTokenIds);
+      }
+    } else if (Array.isArray(data.clobTokenIds)) {
+      clobTokenIds = data.clobTokenIds;
+    }
+
     // Enrichir avec les prix en temps réel depuis CLOB
-    if (data.clobTokenIds && data.clobTokenIds.length > 0) {
-      const realPrices = await fetchPricesForMarket(data.clobTokenIds);
-      data.outcomePrices = realPrices;
+    if (clobTokenIds.length > 0) {
+      const realPrices = await fetchPricesForMarket(clobTokenIds);
+      // Ne remplacer que si on a obtenu des prix valides (pas 0.5)
+      if (realPrices.some(p => p !== '0.5')) {
+        data.outcomePrices = realPrices;
+      }
     }
 
     // Normaliser les données
