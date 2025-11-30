@@ -5,6 +5,232 @@ const POLYMARKET_API_BASE = 'https://gamma-api.polymarket.com';
 const CLOB_API_BASE = 'https://clob.polymarket.com';
 
 export class PolymarketAPI {
+  // Données de démonstration
+  private static getMockMarkets(): Market[] {
+    return [
+      {
+        id: '1',
+        question: 'Will Bitcoin reach $100,000 in 2025?',
+        description: 'This market will resolve to "Yes" if Bitcoin (BTC) reaches or exceeds $100,000 at any point in 2025.',
+        outcomePrices: ['0.67', '0.33'],
+        outcomes: ['Yes', 'No'],
+        volume: 2847392,
+        liquidity: 456789,
+        active: true,
+        closed: false,
+        endDate: '2025-12-31',
+        category: 'Crypto',
+        image: '',
+        icon: '',
+        createdAt: '2024-01-15',
+        updatedAt: '2025-11-30',
+        enableOrderBook: true,
+        spread: 2.3,
+        volumeChange24h: 45.2,
+        priceChange24h: 8.7,
+        trending: true,
+      },
+      {
+        id: '2',
+        question: 'Will Trump win the 2024 US Presidential Election?',
+        description: 'Resolves to Yes if Donald Trump wins the 2024 Presidential Election.',
+        outcomePrices: ['0.54', '0.46'],
+        outcomes: ['Yes', 'No'],
+        volume: 8934521,
+        liquidity: 1234567,
+        active: true,
+        closed: false,
+        endDate: '2024-11-05',
+        category: 'Politics',
+        image: '',
+        icon: '',
+        createdAt: '2023-06-01',
+        updatedAt: '2025-11-30',
+        enableOrderBook: true,
+        spread: 1.8,
+        volumeChange24h: 120.5,
+        priceChange24h: -3.2,
+        trending: true,
+      },
+      {
+        id: '3',
+        question: 'Will Ethereum switch to Proof of Stake by end of 2025?',
+        description: 'Market resolves Yes if Ethereum successfully transitions to PoS.',
+        outcomePrices: ['0.89', '0.11'],
+        outcomes: ['Yes', 'No'],
+        volume: 1567234,
+        liquidity: 345678,
+        active: true,
+        closed: false,
+        endDate: '2025-12-31',
+        category: 'Crypto',
+        image: '',
+        icon: '',
+        createdAt: '2024-03-10',
+        updatedAt: '2025-11-30',
+        enableOrderBook: true,
+        spread: 3.1,
+        volumeChange24h: 23.4,
+        priceChange24h: 12.3,
+        trending: false,
+      },
+      {
+        id: '4',
+        question: 'Will AI surpass human intelligence by 2030?',
+        description: 'Resolves Yes if AGI is achieved by experts consensus.',
+        outcomePrices: ['0.42', '0.58'],
+        outcomes: ['Yes', 'No'],
+        volume: 3421890,
+        liquidity: 678901,
+        active: true,
+        closed: false,
+        endDate: '2030-12-31',
+        category: 'Science',
+        image: '',
+        icon: '',
+        createdAt: '2024-01-20',
+        updatedAt: '2025-11-30',
+        enableOrderBook: true,
+        spread: 2.7,
+        volumeChange24h: 89.3,
+        priceChange24h: 15.6,
+        trending: true,
+      },
+      {
+        id: '5',
+        question: 'Will the Lakers win the 2025 NBA Championship?',
+        description: 'Resolves Yes if the LA Lakers win the 2025 NBA Finals.',
+        outcomePrices: ['0.28', '0.72'],
+        outcomes: ['Yes', 'No'],
+        volume: 1234567,
+        liquidity: 234567,
+        active: true,
+        closed: false,
+        endDate: '2025-06-30',
+        category: 'Sports',
+        image: '',
+        icon: '',
+        createdAt: '2024-10-01',
+        updatedAt: '2025-11-30',
+        enableOrderBook: true,
+        spread: 2.9,
+        volumeChange24h: 34.7,
+        priceChange24h: -5.4,
+        trending: false,
+      },
+      {
+        id: '6',
+        question: 'Will Taylor Swift release a new album in 2025?',
+        description: 'Resolves Yes if Taylor Swift officially releases a studio album.',
+        outcomePrices: ['0.76', '0.24'],
+        outcomes: ['Yes', 'No'],
+        volume: 987654,
+        liquidity: 187654,
+        active: true,
+        closed: false,
+        endDate: '2025-12-31',
+        category: 'Pop Culture',
+        image: '',
+        icon: '',
+        createdAt: '2024-01-05',
+        updatedAt: '2025-11-30',
+        enableOrderBook: true,
+        spread: 3.4,
+        volumeChange24h: 67.8,
+        priceChange24h: 9.2,
+        trending: true,
+      },
+      {
+        id: '7',
+        question: 'Will Tesla stock reach $500 by end of 2025?',
+        description: 'Resolves Yes if TSLA closes at or above $500 on any trading day.',
+        outcomePrices: ['0.61', '0.39'],
+        outcomes: ['Yes', 'No'],
+        volume: 2134567,
+        liquidity: 456123,
+        active: true,
+        closed: false,
+        endDate: '2025-12-31',
+        category: 'Business',
+        image: '',
+        icon: '',
+        createdAt: '2024-02-14',
+        updatedAt: '2025-11-30',
+        enableOrderBook: true,
+        spread: 2.1,
+        volumeChange24h: 156.3,
+        priceChange24h: 18.9,
+        trending: true,
+      },
+      {
+        id: '8',
+        question: 'Will SpaceX land humans on Mars by 2030?',
+        description: 'Resolves Yes if SpaceX successfully lands humans on Mars.',
+        outcomePrices: ['0.35', '0.65'],
+        outcomes: ['Yes', 'No'],
+        volume: 5678901,
+        liquidity: 987654,
+        active: true,
+        closed: false,
+        endDate: '2030-12-31',
+        category: 'Science',
+        image: '',
+        icon: '',
+        createdAt: '2023-12-01',
+        updatedAt: '2025-11-30',
+        enableOrderBook: true,
+        spread: 2.5,
+        volumeChange24h: 234.7,
+        priceChange24h: 22.1,
+        trending: true,
+      },
+      {
+        id: '9',
+        question: 'Will the Fed cut interest rates in Q1 2025?',
+        description: 'Resolves Yes if the Federal Reserve cuts rates in first quarter.',
+        outcomePrices: ['0.71', '0.29'],
+        outcomes: ['Yes', 'No'],
+        volume: 4567890,
+        liquidity: 789012,
+        active: true,
+        closed: false,
+        endDate: '2025-03-31',
+        category: 'Business',
+        image: '',
+        icon: '',
+        createdAt: '2024-11-01',
+        updatedAt: '2025-11-30',
+        enableOrderBook: true,
+        spread: 1.9,
+        volumeChange24h: 45.6,
+        priceChange24h: -7.8,
+        trending: false,
+      },
+      {
+        id: '10',
+        question: 'Will Messi play in the 2026 World Cup?',
+        description: 'Resolves Yes if Lionel Messi participates in 2026 FIFA World Cup.',
+        outcomePrices: ['0.58', '0.42'],
+        outcomes: ['Yes', 'No'],
+        volume: 3456789,
+        liquidity: 567890,
+        active: true,
+        closed: false,
+        endDate: '2026-07-31',
+        category: 'Sports',
+        image: '',
+        icon: '',
+        createdAt: '2024-08-15',
+        updatedAt: '2025-11-30',
+        enableOrderBook: true,
+        spread: 2.6,
+        volumeChange24h: 78.9,
+        priceChange24h: 6.5,
+        trending: false,
+      },
+    ];
+  }
+
   private static async fetchMarkets(): Promise<Market[]> {
     try {
       const response = await axios.get(`${POLYMARKET_API_BASE}/markets`, {
@@ -14,10 +240,19 @@ export class PolymarketAPI {
           limit: 100,
         },
       });
-      return response.data;
+
+      // Si l'API retourne des données, les utiliser
+      if (response.data && response.data.length > 0) {
+        return response.data;
+      }
+
+      // Sinon, utiliser les données de démonstration
+      console.log('Using mock data - API returned no results');
+      return this.getMockMarkets();
     } catch (error) {
-      console.error('Error fetching markets:', error);
-      return [];
+      console.error('Error fetching markets, using mock data:', error);
+      // En cas d'erreur, utiliser les données de démonstration
+      return this.getMockMarkets();
     }
   }
 
@@ -72,11 +307,16 @@ export class PolymarketAPI {
   static async getMarketById(id: string): Promise<Market | null> {
     try {
       const response = await axios.get(`${POLYMARKET_API_BASE}/markets/${id}`);
-      return response.data;
+      if (response.data) {
+        return response.data;
+      }
     } catch (error) {
-      console.error('Error fetching market:', error);
-      return null;
+      console.error('Error fetching market, using mock data:', error);
     }
+
+    // Fallback sur les données mock
+    const mockMarkets = this.getMockMarkets();
+    return mockMarkets.find(m => m.id === id) || mockMarkets[0];
   }
 
   static async getMarketHistory(marketId: string, days = 7): Promise<MarketHistory[]> {
