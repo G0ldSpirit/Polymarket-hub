@@ -233,7 +233,8 @@ export class PolymarketAPI {
 
   private static async fetchMarkets(): Promise<Market[]> {
     try {
-      const response = await axios.get(`${POLYMARKET_API_BASE}/markets`, {
+      // Appeler notre API Next.js qui fait le proxy vers Polymarket
+      const response = await axios.get('/api/markets', {
         params: {
           closed: false,
           active: true,
@@ -242,15 +243,16 @@ export class PolymarketAPI {
       });
 
       // Si l'API retourne des données, les utiliser
-      if (response.data && response.data.length > 0) {
+      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        console.log('✅ Using real Polymarket data:', response.data.length, 'markets');
         return response.data;
       }
 
       // Sinon, utiliser les données de démonstration
-      console.log('Using mock data - API returned no results');
+      console.log('⚠️ API returned no results, using mock data');
       return this.getMockMarkets();
     } catch (error) {
-      console.error('Error fetching markets, using mock data:', error);
+      console.error('❌ Error fetching markets, using mock data:', error);
       // En cas d'erreur, utiliser les données de démonstration
       return this.getMockMarkets();
     }
@@ -306,12 +308,14 @@ export class PolymarketAPI {
 
   static async getMarketById(id: string): Promise<Market | null> {
     try {
-      const response = await axios.get(`${POLYMARKET_API_BASE}/markets/${id}`);
+      // Appeler notre API Next.js qui fait le proxy vers Polymarket
+      const response = await axios.get(`/api/markets/${id}`);
       if (response.data) {
+        console.log('✅ Using real Polymarket data for market:', id);
         return response.data;
       }
     } catch (error) {
-      console.error('Error fetching market, using mock data:', error);
+      console.error('❌ Error fetching market, using mock data:', error);
     }
 
     // Fallback sur les données mock
