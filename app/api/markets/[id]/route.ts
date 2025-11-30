@@ -1,29 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const POLYMARKET_API_BASE = 'https://gamma-api.polymarket.com';
+const POLYMARKET_STRAPI_API = 'https://strapi-matic.poly.market';
+const CLOB_API_BASE = 'https://clob.polymarket.com';
+
+// Fonction pour récupérer les prix en temps réel depuis CLOB
+async function fetchPricesForMarket(clobTokenIds: string[]): Promise<string[]> {
+  if (!clobTokenIds || clobTokenIds.length === 0) {
+    return ['0.5', '0.5'];
+  }
+
+  try {
+    const pricePromises = clobTokenIds.map(async (tokenId) => {
+      try {
+        const response = await fetch(`${CLOB_API_BASE}/midpoint?token_id=${tokenId}`);
+        if (response.ok) {
+          const data = await response.json();
+          return data.mid || '0.5';
+        }
+      } catch (err) {
+        console.error(`Error fetching price for token ${tokenId}:`, err);
+      }
+      return '0.5';
+    });
+
+    const prices = await Promise.all(pricePromises);
+    return prices.map(p => String(p));
+  } catch (error) {
+    console.error('Error fetching prices:', error);
+    return ['0.5', '0.5'];
+  }
+}
 
 // Fonction pour normaliser les données Polymarket
 function normalizeMarketData(market: any): any {
-  // L'API Polymarket peut avoir différents formats
-  let outcomePrices = market.outcomePrices;
+  let outcomePrices = market.outcomePrices || ['0.5', '0.5'];
 
-  // Si outcomePrices n'existe pas ou n'est pas dans le bon format
-  if (!outcomePrices || !Array.isArray(outcomePrices)) {
-    // Essayer d'autres champs possibles de l'API
-    if (market.outcomes && Array.isArray(market.outcomes)) {
-      outcomePrices = market.outcomes.map((outcome: any) => {
-        if (outcome.price !== undefined) {
-          const price = typeof outcome.price === 'number' ? outcome.price : parseFloat(outcome.price || '0.5');
-          return String(price);
-        }
-        return '0.5';
-      });
-    } else {
-      // Fallback : utiliser les prix par défaut
-      outcomePrices = ['0.5', '0.5'];
-    }
-  } else {
-    // S'assurer que outcomePrices contient des strings
+  if (Array.isArray(outcomePrices)) {
     outcomePrices = outcomePrices.map((price: any) => {
       if (typeof price === 'string') return price;
       if (typeof price === 'number') return String(price);
@@ -31,12 +43,10 @@ function normalizeMarketData(market: any): any {
     });
   }
 
-  // S'assurer que outcomes existe
   let outcomes = market.outcomes;
   if (!outcomes || !Array.isArray(outcomes)) {
     outcomes = ['Yes', 'No'];
   } else if (typeof outcomes[0] !== 'string') {
-    // Si outcomes est un tableau d'objets, extraire les noms
     outcomes = outcomes.map((o: any) => o.name || o.title || 'Yes');
   }
 
@@ -57,7 +67,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const url = `${POLYMARKET_API_BASE}/markets/${id}`;
+    const url = `${POLYMARKET_STRAPI_API}/markets/${id}`;
 
     const response = await fetch(url, {
       headers: {
@@ -75,12 +85,18 @@ export async function GET(
 
     const data = await response.json();
 
-    console.log('📊 Polymarket API raw market data:', JSON.stringify(data, null, 2));
+    console.log('📊 Polymarket API raw market data');
+
+    // Enrichir avec les prix en temps réel depuis CLOB
+    if (data.clobTokenIds && data.clobTokenIds.length > 0) {
+      const realPrices = await fetchPricesForMarket(data.clobTokenIds);
+      data.outcomePrices = realPrices;
+    }
 
     // Normaliser les données
     const normalizedData = normalizeMarketData(data);
 
-    console.log('✅ Normalized market data:', JSON.stringify(normalizedData, null, 2));
+    console.log('✅ Normalized and enriched market data');
 
     return NextResponse.json(normalizedData, {
       headers: {
