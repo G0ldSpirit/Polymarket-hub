@@ -68,7 +68,8 @@ export default function MarketAnalysisPage() {
   }
 
   const currentPrice = parseFloat(market.outcomePrices[0] || '0.5');
-  const pricePercentage = (currentPrice * 100).toFixed(1);
+  // Arrondir comme Polymarket (au pourcent entier)
+  const pricePercentage = Math.round(currentPrice * 100);
   const priceChange = market.priceChange24h || 0;
 
   return (
