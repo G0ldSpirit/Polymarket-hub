@@ -97,11 +97,26 @@ export async function GET(request: NextRequest) {
     }
 
     console.log(`📊 Received ${data.length} markets from Strapi API`);
-    console.log('Sample market:', JSON.stringify(data[0], null, 2));
+
+    // Filtrer les marchés passés (dont la date de fin est dépassée)
+    const now = new Date();
+    const activeMarkets = data.filter((market: any) => {
+      // Si pas de date de fin, garder le marché
+      if (!market.endDate) return true;
+
+      // Vérifier si la date de fin est dans le futur
+      const endDate = new Date(market.endDate);
+      return endDate > now;
+    });
+
+    console.log(`✅ Filtered to ${activeMarkets.length} active markets (removed ${data.length - activeMarkets.length} past markets)`);
+    if (activeMarkets.length > 0) {
+      console.log('Sample market:', JSON.stringify(activeMarkets[0], null, 2));
+    }
 
     // Enrichir avec les prix en temps réel depuis CLOB
     const enrichedMarkets = await Promise.all(
-      data.slice(0, limit).map(async (market: any) => {
+      activeMarkets.slice(0, limit).map(async (market: any) => {
         // Essayer de récupérer les vrais prix depuis CLOB
         if (market.clobTokenIds && market.clobTokenIds.length > 0) {
           const realPrices = await fetchPricesForMarket(market.clobTokenIds);
