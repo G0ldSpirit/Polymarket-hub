@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const POLYMARKET_STRAPI_API = 'https://strapi-matic.poly.market';
+const GAMMA_API_BASE = 'https://gamma-api.polymarket.com';
 const CLOB_API_BASE = 'https://clob.polymarket.com';
 
 // Fonction pour récupérer les prix en temps réel depuis CLOB
@@ -68,12 +68,12 @@ function normalizeMarketData(market: any): any {
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const limit = parseInt(searchParams.get('limit') || '100');
 
-    // Utiliser l'API Strapi de Polymarket qui a des données plus complètes
-    const url = `${POLYMARKET_STRAPI_API}/markets?_limit=${limit}&active=true&closed=false&_sort=volume:DESC`;
+    // Utiliser l'API Gamma de Polymarket
+    const url = `${GAMMA_API_BASE}/markets?closed=false&active=true&limit=${limit}`;
 
-    console.log('🔍 Fetching from Polymarket Strapi API:', url);
+    console.log('🔍 Fetching from Polymarket Gamma API:', url);
 
     const response = await fetch(url, {
       headers: {
@@ -92,11 +92,11 @@ export async function GET(request: NextRequest) {
     const data = await response.json();
 
     if (!data || data.length === 0) {
-      console.log('⚠️ No markets returned from Strapi API');
+      console.log('⚠️ No markets returned from Gamma API');
       return NextResponse.json([]);
     }
 
-    console.log(`📊 Received ${data.length} markets from Strapi API`);
+    console.log(`📊 Received ${data.length} markets from Gamma API`);
 
     // Filtrer les marchés passés (dont la date de fin est dépassée)
     const now = new Date();
@@ -128,7 +128,9 @@ export async function GET(request: NextRequest) {
     );
 
     console.log('✅ Enriched markets with real prices');
-    console.log('Sample enriched market:', JSON.stringify(enrichedMarkets[0], null, 2));
+    if (enrichedMarkets.length > 0) {
+      console.log('Sample enriched market:', JSON.stringify(enrichedMarkets[0], null, 2));
+    }
 
     return NextResponse.json(enrichedMarkets, {
       headers: {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const POLYMARKET_STRAPI_API = 'https://strapi-matic.poly.market';
+const GAMMA_API_BASE = 'https://gamma-api.polymarket.com';
 const CLOB_API_BASE = 'https://clob.polymarket.com';
 
 // Fonction pour récupérer les prix en temps réel depuis CLOB
@@ -67,7 +67,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const url = `${POLYMARKET_STRAPI_API}/markets/${id}`;
+    const url = `${GAMMA_API_BASE}/markets/${id}`;
 
     const response = await fetch(url, {
       headers: {
