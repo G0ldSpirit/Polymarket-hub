@@ -16,6 +16,15 @@ export default function MarketCard({ market, showTrending = false }: MarketCardP
   const priceChange = market.priceChange24h || 0;
   const volumeChange = market.volumeChange24h || 0;
 
+  // Récupérer le nom du premier outcome (généralement "Yes")
+  const outcomeName = market.outcomes && market.outcomes[0] ? market.outcomes[0] : 'Yes';
+
+  // Calculer le prix du second outcome si disponible
+  const hasMultipleOutcomes = market.outcomePrices && market.outcomePrices.length > 1;
+  const secondPrice = hasMultipleOutcomes ? parseFloat(market.outcomePrices[1] || '0.5') : null;
+  const secondPercentage = secondPrice !== null ? Math.round(secondPrice * 100) : null;
+  const secondOutcomeName = market.outcomes && market.outcomes[1] ? market.outcomes[1] : 'No';
+
   return (
     <Link href={`/analysis/${market.id}`}>
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow cursor-pointer border border-gray-200 dark:border-gray-700">
@@ -41,19 +50,30 @@ export default function MarketCard({ market, showTrending = false }: MarketCardP
         <div className="grid grid-cols-2 gap-4 mb-3">
           <div>
             <p className="text-sm text-gray-500 dark:text-gray-400">Prix actuel</p>
-            <div className="flex items-center gap-2">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {pricePercentage}%
-              </p>
-              {priceChange !== 0 && (
-                <div className={`flex items-center gap-1 ${priceChange > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                  {priceChange > 0 ? (
-                    <TrendingUp className="w-4 h-4" />
-                  ) : (
-                    <TrendingDown className="w-4 h-4" />
-                  )}
-                  <span className="text-sm font-medium">
-                    {Math.abs(priceChange).toFixed(1)}%
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{outcomeName}:</span>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {pricePercentage}%
+                </p>
+                {priceChange !== 0 && (
+                  <div className={`flex items-center gap-1 ${priceChange > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {priceChange > 0 ? (
+                      <TrendingUp className="w-4 h-4" />
+                    ) : (
+                      <TrendingDown className="w-4 h-4" />
+                    )}
+                    <span className="text-sm font-medium">
+                      {Math.abs(priceChange).toFixed(1)}%
+                    </span>
+                  </div>
+                )}
+              </div>
+              {hasMultipleOutcomes && secondPercentage !== null && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{secondOutcomeName}:</span>
+                  <span className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+                    {secondPercentage}%
                   </span>
                 </div>
               )}

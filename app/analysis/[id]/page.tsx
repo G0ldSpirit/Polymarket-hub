@@ -72,6 +72,13 @@ export default function MarketAnalysisPage() {
   const pricePercentage = Math.round(currentPrice * 100);
   const priceChange = market.priceChange24h || 0;
 
+  // Récupérer les noms des outcomes
+  const outcomeName = market.outcomes && market.outcomes[0] ? market.outcomes[0] : 'Yes';
+  const hasMultipleOutcomes = market.outcomePrices && market.outcomePrices.length > 1;
+  const secondPrice = hasMultipleOutcomes ? parseFloat(market.outcomePrices[1] || '0.5') : null;
+  const secondPercentage = secondPrice !== null ? Math.round(secondPrice * 100) : null;
+  const secondOutcomeName = market.outcomes && market.outcomes[1] ? market.outcomes[1] : 'No';
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Back Button */}
@@ -109,23 +116,34 @@ export default function MarketAnalysisPage() {
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
               Prix actuel
             </p>
-            <div className="flex items-center gap-2">
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                {pricePercentage}%
-              </p>
-              {priceChange !== 0 && (
-                <div
-                  className={`flex items-center gap-1 ${
-                    priceChange > 0 ? 'text-green-500' : 'text-red-500'
-                  }`}
-                >
-                  {priceChange > 0 ? (
-                    <TrendingUp className="w-5 h-5" />
-                  ) : (
-                    <TrendingDown className="w-5 h-5" />
-                  )}
-                  <span className="text-sm font-medium">
-                    {Math.abs(priceChange).toFixed(1)}%
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{outcomeName}:</span>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                  {pricePercentage}%
+                </p>
+                {priceChange !== 0 && (
+                  <div
+                    className={`flex items-center gap-1 ${
+                      priceChange > 0 ? 'text-green-500' : 'text-red-500'
+                    }`}
+                  >
+                    {priceChange > 0 ? (
+                      <TrendingUp className="w-5 h-5" />
+                    ) : (
+                      <TrendingDown className="w-5 h-5" />
+                    )}
+                    <span className="text-sm font-medium">
+                      {Math.abs(priceChange).toFixed(1)}%
+                    </span>
+                  </div>
+                )}
+              </div>
+              {hasMultipleOutcomes && secondPercentage !== null && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{secondOutcomeName}:</span>
+                  <span className="text-2xl font-semibold text-gray-800 dark:text-gray-200">
+                    {secondPercentage}%
                   </span>
                 </div>
               )}
