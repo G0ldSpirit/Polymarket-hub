@@ -325,31 +325,78 @@ export class PolymarketAPI {
 
   static async getMarketHistory(marketId: string, days = 7): Promise<MarketHistory[]> {
     try {
-      // Simuler l'historique pour la démo
-      // En production, utiliser l'API de prix historiques de Polymarket
-      const now = Date.now();
-      const dayMs = 24 * 60 * 60 * 1000;
-      const history: MarketHistory[] = [];
+      // Récupérer le marché pour obtenir les CLOB token IDs
+      const response = await axios.get(`/api/markets/${marketId}`);
+      const market = response.data;
 
-      for (let i = days; i >= 0; i--) {
-        const timestamp = now - (i * dayMs);
-        const basePrice = 0.5;
-        const variation = Math.sin(i / 2) * 0.2 + Math.random() * 0.1;
-        const price = Math.max(0.01, Math.min(0.99, basePrice + variation));
-        const volume = Math.random() * 100000 + 50000;
-
-        history.push({
-          timestamp,
-          price,
-          volume,
-        });
+      if (!market || !market.clobTokenIds) {
+        console.warn('No CLOB token IDs available for market history');
+        return this.getFallbackHistory(days);
       }
 
-      return history;
+      // Parser les clobTokenIds (peut être string ou array)
+      let clobTokenIds: string[] = [];
+      if (typeof market.clobTokenIds === 'string') {
+        try {
+          clobTokenIds = JSON.parse(market.clobTokenIds);
+        } catch (e) {
+          clobTokenIds = [market.clobTokenIds];
+        }
+      } else if (Array.isArray(market.clobTokenIds)) {
+        clobTokenIds = market.clobTokenIds;
+      }
+
+      if (clobTokenIds.length === 0) {
+        console.warn('Empty CLOB token IDs array');
+        return this.getFallbackHistory(days);
+      }
+
+      // Utiliser le premier token (généralement "Yes" pour les marchés binaires)
+      const tokenId = clobTokenIds[0];
+
+      // Configurer les paramètres selon la durée demandée
+      const interval = days <= 1 ? '1d' : days <= 7 ? '1w' : 'max';
+      const fidelity = days <= 1 ? 60 : 1440; // hourly vs daily
+
+      // Appeler l'API CLOB pour l'historique des prix
+      const historyUrl = `https://clob.polymarket.com/prices-history?market=${tokenId}&interval=${interval}&fidelity=${fidelity}`;
+      const historyResponse = await axios.get(historyUrl);
+
+      if (!historyResponse.data || !historyResponse.data.history) {
+        console.warn('No history data returned from API');
+        return this.getFallbackHistory(days);
+      }
+
+      // Transformer la réponse en MarketHistory[]
+      // Format API: [{t: timestamp_seconds, p: price_0_to_1}]
+      return historyResponse.data.history.map((point: { t: number; p: number }) => ({
+        timestamp: point.t * 1000, // Convertir secondes en millisecondes
+        price: point.p,             // Déjà normalisé entre 0 et 1
+        volume: 0,                  // L'endpoint prices-history ne fournit pas le volume
+      }));
+
     } catch (error) {
       console.error('Error fetching market history:', error);
-      return [];
+      return this.getFallbackHistory(days);
     }
+  }
+
+  // Fonction de fallback pour générer un historique basique
+  private static getFallbackHistory(days: number): MarketHistory[] {
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+    const history: MarketHistory[] = [];
+
+    for (let i = days; i >= 0; i--) {
+      const timestamp = now - (i * dayMs);
+      history.push({
+        timestamp,
+        price: 0.5,
+        volume: 0,
+      });
+    }
+
+    return history;
   }
 
   static async searchMarkets(query: string): Promise<Market[]> {
