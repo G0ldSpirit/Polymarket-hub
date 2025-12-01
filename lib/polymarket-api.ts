@@ -367,17 +367,61 @@ export class PolymarketAPI {
         return this.getFallbackHistory(days);
       }
 
+      // Récupérer les trades pour calculer le volume (si conditionId disponible)
+      const volumeByTimestamp = await this.fetchVolumeHistory(market.conditionId, days);
+
       // Transformer la réponse en MarketHistory[]
       // Format API: [{t: timestamp_seconds, p: price_0_to_1}]
       return historyResponse.data.history.map((point: { t: number; p: number }) => ({
         timestamp: point.t * 1000, // Convertir secondes en millisecondes
         price: point.p,             // Déjà normalisé entre 0 et 1
-        volume: 0,                  // L'endpoint prices-history ne fournit pas le volume
+        volume: volumeByTimestamp.get(point.t) || 0, // Volume calculé depuis les trades
       }));
 
     } catch (error) {
       console.error('Error fetching market history:', error);
       return this.getFallbackHistory(days);
+    }
+  }
+
+  // Récupérer le volume historique depuis les trades
+  private static async fetchVolumeHistory(conditionId: string, days: number): Promise<Map<number, number>> {
+    const volumeMap = new Map<number, number>();
+
+    if (!conditionId) {
+      return volumeMap;
+    }
+
+    try {
+      // Calculer le timestamp de début (en secondes)
+      const now = Math.floor(Date.now() / 1000);
+      const startTs = now - (days * 24 * 60 * 60);
+
+      // Appeler l'API trades
+      const tradesUrl = `https://data-api.polymarket.com/trades?market=${conditionId}&limit=1000`;
+      const tradesResponse = await axios.get(tradesUrl);
+
+      if (!tradesResponse.data || !Array.isArray(tradesResponse.data)) {
+        return volumeMap;
+      }
+
+      // Filtrer les trades dans la période demandée
+      const trades = tradesResponse.data.filter((trade: any) => trade.timestamp >= startTs);
+
+      // Agréger le volume par jour
+      const dayInSeconds = 24 * 60 * 60;
+      trades.forEach((trade: any) => {
+        // Arrondir au jour près (en secondes, comme l'API prices-history)
+        const dayTimestamp = Math.floor(trade.timestamp / dayInSeconds) * dayInSeconds;
+        const volume = (trade.size || 0) * (trade.price || 0);
+
+        volumeMap.set(dayTimestamp, (volumeMap.get(dayTimestamp) || 0) + volume);
+      });
+
+      return volumeMap;
+    } catch (error) {
+      console.warn('Could not fetch volume history:', error);
+      return volumeMap;
     }
   }
 

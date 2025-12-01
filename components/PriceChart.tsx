@@ -23,9 +23,9 @@ export default function PriceChart({ data, showVolume = false }: PriceChartProps
   const chartData = data.map(point => ({
     timestamp: point.timestamp,
     date: format(point.timestamp, 'dd/MM'),
-    price: (point.price * 100).toFixed(1),
+    price: Math.round(point.price * 100), // Arrondir comme Polymarket (entier)
     priceRaw: point.price,
-    volume: (point.volume / 1000).toFixed(0),
+    volume: Math.round(point.volume / 1000), // Convertir en K et arrondir
   }));
 
   if (showVolume) {
